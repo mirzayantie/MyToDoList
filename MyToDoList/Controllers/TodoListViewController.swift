@@ -110,7 +110,6 @@ class TodoListViewController: UITableViewController {
             request.predicate = categoryPredicate
         }
         
-        
             do {
                 itemArray = try context.fetch(request)
             } catch {
@@ -138,6 +137,7 @@ extension TodoListViewController : UISearchBarDelegate {
     }
     
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        
         if searchBar.text?.count == 0 {
             loadItems()
             DispatchQueue.main.async {
