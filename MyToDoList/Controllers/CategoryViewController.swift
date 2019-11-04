@@ -7,22 +7,25 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
-class CategoryViewController: UITableViewController {
 
-    var categoryArray = [Category]()
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+class CategoryViewController: SwipeTableViewController {
     
+    let realm = try! Realm()
+
+    var categories: Results<Category>?
+   
     override func viewDidLoad() {
         super.viewDidLoad()
         loadCategories()
+        
 
     }
 
   
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
-        print("click add")
+       
         var textField = UITextField()
         
         let alert = UIAlertController(title: "Add New Category", message: "", preferredStyle: .alert)
@@ -30,10 +33,9 @@ class CategoryViewController: UITableViewController {
         let action = UIAlertAction(title: "Add", style: .default) { (action) in
             
             //what will happen after user click Add Category button on UIAlert
-            let newCategory = Category(context: self.context)
+            let newCategory = Category()
             newCategory.name = textField.text!
-            self.categoryArray.append(newCategory)
-            self.saveCategories()
+            self.save(category: newCategory)
         }
         
         
@@ -52,14 +54,13 @@ class CategoryViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         // #warning Incomplete implementation, return the number of rows
-        return categoryArray.count
+        return categories?.count ?? 1
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
-        let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
-        
-        cell.textLabel?.text = categoryArray[indexPath.row].name
+        cell.textLabel?.text = categories?[indexPath.row].name ?? " No category added yet"
 
         return cell
         
@@ -79,31 +80,45 @@ class CategoryViewController: UITableViewController {
         let destinationVC = segue.destination as! TodoListViewController
         
         if let indexPath = tableView.indexPathForSelectedRow {
-            destinationVC.selectedCategory = categoryArray[indexPath.row]
+            destinationVC.selectedCategory = categories?[indexPath.row]
         }
     }
     
     //MARK: Model manipulation methods
     
-    func saveCategories() {
+    func save(category: Category) {
         do {
-            try context.save()
+            try realm.write {
+                realm.add(category)
+            }
         } catch {
             print("Error saving context \(error)")
         }
         self.tableView.reloadData()
     }
     
-    func loadCategories (with request: NSFetchRequest<Category> = Category.fetchRequest()) {
+    func loadCategories () {
 
-        do {
-            categoryArray = try context.fetch(request)
-        } catch {
-            print("error fetching data from context \(error)" )
-        }
+        categories = realm.objects(Category.self)
+
         tableView.reloadData()
         
     }
     
-}
+    //MARK : Delete data from swipe
+    override func updateModel(at indexPath: IndexPath) {
+        
+        if let categoryForDeletion = self.categories?[indexPath.row] {
+        do {
+            try self.realm.write {
+                self.realm.delete(categoryForDeletion)
+            }
+        } catch {
+            print("Error deleting , \(error)")
+        }
+    }
+  
+    }
 
+
+}
