@@ -8,8 +8,11 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
 class TodoListViewController: SwipeTableViewController {
+    
+    @IBOutlet weak var searchBar: UISearchBar!
     
     var todoItem: Results<Item>?
     
@@ -23,7 +26,34 @@ class TodoListViewController: SwipeTableViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
+        //print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
+        tableView.separatorStyle = .none
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        
+        title = selectedCategory?.name
+        guard let color = UIColor(hexString: selectedCategory!.color) else {fatalError()}
+        setupNavBar(with: color)
+        
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        
+        guard let originalColor = UIColor(hexString: "2126A1") else {fatalError()}
+        setupNavBar(with: originalColor)
+        
+    }
+    
+    //MARK: Setup nav bar
+    func setupNavBar(with color: UIColor) {
+        
+        guard let navBar = navigationController?.navigationBar else {fatalError()}
+        
+        navBar.barTintColor = color
+        navBar.tintColor = ContrastColorOf(color, returnFlat: true)
+        navBar.largeTitleTextAttributes = [NSAttributedString.Key.foregroundColor : ContrastColorOf(color, returnFlat: true)]
+        searchBar.barTintColor = color
         
     }
     
@@ -36,9 +66,16 @@ class TodoListViewController: SwipeTableViewController {
         if let item = todoItem?[indexPath.row] {
             
             cell.textLabel?.text = item.title
-            //ternary operator ==>
-            //value = condition? valueIfTrue: valueIfFalse
-            cell.accessoryType = item.done ? .checkmark : .none
+            
+            if let color = UIColor(hexString: selectedCategory!.color)?.darken(byPercentage: CGFloat(indexPath.row)/CGFloat(todoItem!.count)) {
+                
+                cell.backgroundColor = color
+               
+                cell.textLabel?.textColor = ContrastColorOf(color, returnFlat: true)
+            }
+            
+            cell.accessoryType = item.done ? .checkmark : .none //ternary operator ==> value = condition? valueIfTrue: valueIfFalse
+            
         } else {
             cell.textLabel?.text = " No items added"
         }
